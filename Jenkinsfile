@@ -62,7 +62,6 @@ pipeline {
                       --name test-tracking \
                       --link mongo-test \
                       -e MONGO_URI=mongodb://mongo-test:27017 \
-                      -p 8087:8087 \
                       $IMAGE
 
                     sleep 5
