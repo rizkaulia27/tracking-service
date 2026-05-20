@@ -34,11 +34,20 @@ func TestTrackingAPI_Success(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("Expected status 200, got %d", resp.StatusCode)
+	}
 
 	var result trackingResponse
 
-	json.NewDecoder(resp.Body).Decode(&result)
+	err = json.NewDecoder(resp.Body).Decode(&result)
+
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	if result.Status != "IN_TRANSIT" {
 		t.Errorf("Expected IN_TRANSIT, got %s", result.Status)
