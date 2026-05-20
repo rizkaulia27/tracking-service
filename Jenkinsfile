@@ -41,46 +41,13 @@ pipeline {
         // 5. FUNCTIONAL TEST
         stage('Functional Test') {
             steps {
-
+        
                 catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-
+        
                     sh '''
-                    echo "CREATE NETWORK"
-
-                    docker network create $NETWORK || true
-
-                    echo "REMOVE OLD CONTAINERS"
-
-                    docker rm -f mongo-test || true
-                    docker rm -f test-tracking || true
-
-                    echo "START MONGODB"
-
-                    docker run -d \
-                      --name mongo-test \
-                      --network $NETWORK \
-                      mongo:7
-
-                    sleep 5
-
-                    echo "START TRACKING APP"
-
-                    docker run -d \
-                      --name test-tracking \
-                      --network $NETWORK \
-                      -e MONGO_URI=mongodb://mongo-test:27017 \
-                      $IMAGE
-
-                    sleep 5
-
                     echo "RUN FUNCTIONAL TEST"
-
-                    docker run --rm \
-                      --network $NETWORK \
-                      -v $(pwd):/app \
-                      -w /app \
-                      golang:1.22 \
-                      go test -run TestTrackingAPI_Success
+        
+                    go test -run TestTrackingAPI_Success
                     '''
                 }
             }
