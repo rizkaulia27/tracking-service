@@ -11,7 +11,7 @@ pipeline {
         stage('Checkout Repo') {
             steps {
                 deleteDir()
-                git branch: 'main', url: 'https://github.com/USERNAME/TrackingService.git'
+                git branch: 'main', url: 'https://github.com/rizkaulia27/tracking-service'
             }
         }
 
