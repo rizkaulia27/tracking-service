@@ -13,6 +13,10 @@ type trackingResponse struct {
 
 func TestTrackingAPI_Success(t *testing.T) {
 
+	if testing.Short() {
+		t.Skip("skip functional test")
+	}
+
 	jsonData := []byte(`{
 		"shipment_id":1,
 		"tracking_number":"LOG-1-123456",
