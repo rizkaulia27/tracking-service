@@ -3,6 +3,7 @@ pipeline {
 
     environment {
         IMAGE = "kaulie27/tracking-service:${env.BUILD_NUMBER}"
+        NETWORK = "tracking-net"
     }
 
     stages {
@@ -14,7 +15,7 @@ pipeline {
             }
         }
 
-        // 2. UNIT TEST (BOLEH FAIL)
+        // 2. UNIT TEST
         stage('Unit Test') {
             steps {
                 catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
@@ -23,7 +24,7 @@ pipeline {
             }
         }
 
-        // 3. LINT / VET (WAJIB HIJAU)
+        // 3. LINT / VET
         stage('Lint / Vet') {
             steps {
                 sh 'go vet ./...'
@@ -37,30 +38,36 @@ pipeline {
             }
         }
 
-        // 5. FUNCTIONAL TEST (BOLEH FAIL)
+        // 5. FUNCTIONAL TEST
         stage('Functional Test') {
             steps {
 
                 catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
 
                     sh '''
-                    echo "START MONGODB"
+                    echo "CREATE NETWORK"
+
+                    docker network create $NETWORK || true
+
+                    echo "REMOVE OLD CONTAINERS"
 
                     docker rm -f mongo-test || true
+                    docker rm -f test-tracking || true
+
+                    echo "START MONGODB"
 
                     docker run -d \
                       --name mongo-test \
+                      --network $NETWORK \
                       mongo:7
 
                     sleep 5
 
                     echo "START TRACKING APP"
 
-                    docker rm -f test-tracking || true
-
                     docker run -d \
                       --name test-tracking \
-                      --link mongo-test \
+                      --network $NETWORK \
                       -e MONGO_URI=mongodb://mongo-test:27017 \
                       $IMAGE
 
@@ -68,7 +75,12 @@ pipeline {
 
                     echo "RUN FUNCTIONAL TEST"
 
-                    go test -run TestTrackingAPI_Success
+                    docker run --rm \
+                      --network $NETWORK \
+                      -v $(pwd):/app \
+                      -w /app \
+                      golang:1.22 \
+                      go test -run TestTrackingAPI_Success
                     '''
                 }
             }
@@ -123,6 +135,7 @@ pipeline {
             sh '''
             docker rm -f mongo-test || true
             docker rm -f test-tracking || true
+            docker network rm $NETWORK || true
             '''
         }
     }
