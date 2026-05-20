@@ -10,18 +10,15 @@ pipeline {
         // 1. CHECKOUT
         stage('Checkout Repo') {
             steps {
-                deleteDir()
-                git branch: 'main', url: 'https://github.com/rizkaulia27/tracking-service'
+                echo "CHECKOUT SUCCESS"
             }
         }
 
-        // 2. UNIT TEST (BOLEH FAIL, TAPI LANJUT)
+        // 2. UNIT TEST (BOLEH FAIL)
         stage('Unit Test') {
             steps {
-                dir('TrackingService') {
-                    catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                        sh 'go test -short ./...'
-                    }
+                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                    sh 'go test -short ./...'
                 }
             }
         }
@@ -29,25 +26,25 @@ pipeline {
         // 3. LINT / VET (WAJIB HIJAU)
         stage('Lint / Vet') {
             steps {
-                dir('TrackingService') {
-                    sh 'go vet ./...'
-                }
+                sh 'go vet ./...'
             }
         }
 
-        // 4. BUILD IMAGE (WAJIB HIJAU)
+        // 4. BUILD IMAGE
         stage('Build Image') {
             steps {
-                sh 'docker build -t $IMAGE ./TrackingService'
+                sh 'docker build -t $IMAGE .'
             }
         }
 
-        // 5. FUNCTIONAL TEST (BOLEH FAIL, TAPI LANJUT)
+        // 5. FUNCTIONAL TEST (BOLEH FAIL)
         stage('Functional Test') {
             steps {
+
                 catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+
                     sh '''
-                    echo "START MONGO DB"
+                    echo "START MONGODB"
 
                     docker rm -f mongo-test || true
 
@@ -58,7 +55,7 @@ pipeline {
 
                     sleep 5
 
-                    echo "START APP"
+                    echo "START TRACKING APP"
 
                     docker rm -f test-tracking || true
 
@@ -73,17 +70,16 @@ pipeline {
 
                     echo "RUN FUNCTIONAL TEST"
 
-                    cd TrackingService
-
                     go test -run TestTrackingAPI_Success
                     '''
                 }
             }
         }
 
-        // 6. PUSH IMAGE (WAJIB HIJAU)
+        // 6. PUSH IMAGE
         stage('Push Image') {
             steps {
+
                 withCredentials([usernamePassword(
                     credentialsId: 'dockerhub-login',
                     usernameVariable: 'USERNAME',
@@ -102,7 +98,7 @@ pipeline {
         // 7. DEPLOY
         stage('Deploy') {
             steps {
-                sh 'echo "DEPLOY TRACKING SERVICE OK"'
+                sh 'echo "DEPLOY SUCCESS"'
             }
         }
 
@@ -115,15 +111,17 @@ pipeline {
     }
 
     post {
+
         success {
-            echo 'PIPELINE SUCCESS (meskipun ada stage merah)'
+            echo 'PIPELINE SUCCESS'
         }
 
         failure {
-            echo 'PIPELINE FAILED (cek build/vet/push)'
+            echo 'PIPELINE FAILED'
         }
 
         always {
+
             sh '''
             docker rm -f mongo-test || true
             docker rm -f test-tracking || true
