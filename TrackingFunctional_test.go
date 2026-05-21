@@ -31,7 +31,7 @@ func TestTrackingAPI_Success(t *testing.T) {
     }`)
 
     resp, err := http.Post(
-        "http://"+host+"/tracking",
+        "http://test-tracking:8087/tracking",
         "application/json",
         bytes.NewBuffer(jsonData),
     )
