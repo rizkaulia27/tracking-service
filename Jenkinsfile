@@ -77,14 +77,13 @@ pipeline {
                   curl http://test-tracking:8087/tracking || true
         
                 echo "===== GO TEST ====="
-        
+
                 docker run --rm \
                   --network $NETWORK \
-                  -v $(pwd):/app \
+                  -v "$WORKSPACE":/app \
                   -w /app \
                   golang:1.22 \
                   go test -run TestTrackingAPI_Success
-                '''
             }
         }
         
