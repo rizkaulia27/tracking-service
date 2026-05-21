@@ -47,6 +47,7 @@ pipeline {
         
                 docker rm -f mongodb || true
                 docker rm -f test-tracking || true
+                docker rm -f curl-test || true
                 docker network rm $NETWORK || true
         
                 docker network create $NETWORK
@@ -64,20 +65,27 @@ pipeline {
                 docker run -d \
                   --name test-tracking \
                   --network $NETWORK \
-                  -p 8087:8087 \
                   $IMAGE
         
                 echo "WAITING FOR APPLICATION..."
                 sleep 30
         
+                echo "===== CONTAINER LOG ====="
+                docker logs test-tracking
+        
                 echo "===== HEALTH CHECK ====="
-                curl http://localhost:8087/tracking || true
+        
+                docker run --rm \
+                  --network $NETWORK \
+                  curlimages/curl \
+                  curl http://test-tracking:8087/tracking || true
         
                 echo "===== GO TEST ====="
                 go test -run TestTrackingAPI_Success
                 '''
             }
         }
+        
         // 6. PUSH IMAGE
         stage('Push Image') {
             steps {
