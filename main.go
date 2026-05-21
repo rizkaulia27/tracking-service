@@ -30,7 +30,7 @@ func initMongo() {
         context.TODO(),
         options.Client().ApplyURI(
             "mongodb://admin:admin123@mongodb:27017/?authSource=admin",
-        )
+        ),
     )
 
     if err != nil {
