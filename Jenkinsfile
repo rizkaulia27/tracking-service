@@ -43,7 +43,6 @@ pipeline {
 
             docker network create tracking-net
 
-            # MongoDB
             docker run -d \
               --name mongo-test \
               --network tracking-net \
@@ -51,20 +50,18 @@ pipeline {
               -e MONGO_INITDB_ROOT_PASSWORD=admin \
               mongo
 
-            # tunggu mongo ready
             sleep 15
 
-            # App
             docker run -d \
               --name test-tracking \
               --network tracking-net \
-              -p 8087:8087 \
-              -e MONGO_URI="mongodb://admin:admin@mongo-test:27017" \
+              -e MONGO_URI="mongodb://admin:admin@mongo-test:27017/?authSource=admin" \
               kaulie27/tracking-service:${BUILD_NUMBER}
 
             sleep 15
 
-            docker logs test-tracking
+            # Jenkins container join network
+            docker network connect tracking-net jenkins-server || true
 
             go test -run TestTrackingAPI_Success
         '''
