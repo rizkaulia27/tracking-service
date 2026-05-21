@@ -42,46 +42,42 @@ pipeline {
         stage('Functional Test') {
             steps {
         
-                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+                sh '''
+                echo "RUN FUNCTIONAL TEST"
         
-                    sh '''
-                    echo "RUN FUNCTIONAL TEST"
+                docker rm -f mongodb || true
+                docker rm -f test-tracking || true
+                docker network rm $NETWORK || true
         
-                    docker rm -f mongodb || true
-                    docker rm -f test-tracking || true
-                    docker network rm $NETWORK || true
+                docker network create $NETWORK
         
-                    docker network create $NETWORK
+                docker run -d \
+                  --name mongodb \
+                  --network $NETWORK \
+                  -e MONGO_INITDB_ROOT_USERNAME=admin \
+                  -e MONGO_INITDB_ROOT_PASSWORD=admin123 \
+                  mongo
         
-                    docker run -d \
-                      --name mongodb \
-                      --network $NETWORK \
-                      -e MONGO_INITDB_ROOT_USERNAME=admin \
-                      -e MONGO_INITDB_ROOT_PASSWORD=admin123 \
-                      mongo
+                echo "WAITING FOR MONGODB..."
+                sleep 20
         
-                    echo "WAITING FOR MONGODB..."
-                    sleep 15
+                docker run -d \
+                  --name test-tracking \
+                  --network $NETWORK \
+                  -p 8087:8087 \
+                  $IMAGE
         
-                    docker run -d \
-                      --name test-tracking \
-                      --network $NETWORK \
-                      -p 8087:8087 \
-                      $IMAGE
+                echo "WAITING FOR APPLICATION..."
+                sleep 30
         
-                    echo "WAITING FOR APPLICATION..."
-                    sleep 15
+                echo "===== HEALTH CHECK ====="
+                curl http://localhost:8087/tracking || true
         
-                    echo "===== CONTAINER LOG ====="
-                    docker logs test-tracking
-        
-                    echo "===== TEST ====="
-                    go test -run TestTrackingAPI_Success
-                    '''
-                }
+                echo "===== GO TEST ====="
+                go test -run TestTrackingAPI_Success
+                '''
             }
         }
-
         // 6. PUSH IMAGE
         stage('Push Image') {
             steps {
