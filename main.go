@@ -29,8 +29,8 @@ func initMongo() {
     client, err := mongo.Connect(
         context.TODO(),
         options.Client().ApplyURI(
-            "mongodb://admin:admin123@mongodb:27017",
-        ),
+            "mongodb://admin:admin123@mongodb:27017/?authSource=admin",
+        )
     )
 
     if err != nil {
