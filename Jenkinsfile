@@ -41,18 +41,29 @@ pipeline {
         // 5. FUNCTIONAL TEST
         stage('Functional Test') {
             steps {
-        
                 catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-        
                     sh '''
-                    echo "RUN FUNCTIONAL TEST"
+                    docker network create tracking-net || true
         
-                    go test -run TestTrackingAPI_Success
+                    docker run -d --name mongo-test \
+                      --network tracking-net \
+                      -e MONGO_INITDB_ROOT_USERNAME=admin \
+                      -e MONGO_INITDB_ROOT_PASSWORD=admin123 \
+                      mongo:7
+        
+                    docker run -d --name test-tracking \
+                      --network tracking-net \
+                      -p 8087:8087 \
+                      $IMAGE
+        
+                    sleep 5
+        
+                    go test -v -run TestTrackingAPI_Success
                     '''
                 }
             }
         }
-
+        
         // 6. PUSH IMAGE
         stage('Push Image') {
             steps {
