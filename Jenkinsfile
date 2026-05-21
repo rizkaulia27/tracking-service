@@ -37,24 +37,40 @@ pipeline {
         sh '''
             echo RUN FUNCTIONAL TEST
 
-            # buat network
-            docker network create tracking-net || true
+            docker rm -f mongo-test || true
+            docker rm -f test-tracking || true
+            docker network rm tracking-net || true
 
-            # jalankan container app untuk test
+            docker network create tracking-net
+
+            # MongoDB
+            docker run -d \
+              --name mongo-test \
+              --network tracking-net \
+              -e MONGO_INITDB_ROOT_USERNAME=admin \
+              -e MONGO_INITDB_ROOT_PASSWORD=admin \
+              mongo
+
+            # tunggu mongo ready
+            sleep 15
+
+            # App
             docker run -d \
               --name test-tracking \
               --network tracking-net \
               -p 8087:8087 \
+              -e MONGO_URI="mongodb://admin:admin@mongo-test:27017" \
               kaulie27/tracking-service:${BUILD_NUMBER}
 
-            # tunggu app ready
-            sleep 10
+            sleep 15
 
-            # jalankan functional test
+            docker logs test-tracking
+
             go test -run TestTrackingAPI_Success
         '''
     }
 }
+        
         // 6. PUSH IMAGE
         stage('Push Image') {
             steps {
