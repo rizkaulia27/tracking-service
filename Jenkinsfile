@@ -47,7 +47,6 @@ pipeline {
         
                 docker rm -f mongodb || true
                 docker rm -f test-tracking || true
-                docker rm -f curl-test || true
                 docker network rm $NETWORK || true
         
                 docker network create $NETWORK
@@ -70,9 +69,6 @@ pipeline {
                 echo "WAITING FOR APPLICATION..."
                 sleep 30
         
-                echo "===== CONTAINER LOG ====="
-                docker logs test-tracking
-        
                 echo "===== HEALTH CHECK ====="
         
                 docker run --rm \
@@ -81,7 +77,13 @@ pipeline {
                   curl http://test-tracking:8087/tracking || true
         
                 echo "===== GO TEST ====="
-                go test -run TestTrackingAPI_Success
+        
+                docker run --rm \
+                  --network $NETWORK \
+                  -v $(pwd):/app \
+                  -w /app \
+                  golang:1.22 \
+                  go test -run TestTrackingAPI_Success
                 '''
             }
         }
