@@ -41,37 +41,41 @@ pipeline {
         // 5. FUNCTIONAL TEST
         stage('Functional Test') {
             steps {
-
+        
                 catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-
+        
                     sh '''
                     echo "RUN FUNCTIONAL TEST"
-
+        
                     docker rm -f mongodb || true
                     docker rm -f test-tracking || true
                     docker network rm $NETWORK || true
-
+        
                     docker network create $NETWORK
-
+        
                     docker run -d \
                       --name mongodb \
                       --network $NETWORK \
                       -e MONGO_INITDB_ROOT_USERNAME=admin \
                       -e MONGO_INITDB_ROOT_PASSWORD=admin123 \
                       mongo
-
+        
                     echo "WAITING FOR MONGODB..."
-                    sleep 10
-
+                    sleep 15
+        
                     docker run -d \
                       --name test-tracking \
                       --network $NETWORK \
                       -p 8087:8087 \
                       $IMAGE
-
+        
                     echo "WAITING FOR APPLICATION..."
-                    sleep 10
-
+                    sleep 15
+        
+                    echo "===== CONTAINER LOG ====="
+                    docker logs test-tracking
+        
+                    echo "===== TEST ====="
                     go test -run TestTrackingAPI_Success
                     '''
                 }
