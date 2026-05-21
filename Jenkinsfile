@@ -40,52 +40,53 @@ pipeline {
 
         // 5. FUNCTIONAL TEST
         stage('Functional Test') {
-            steps {
-        
-                sh '''
-                echo "RUN FUNCTIONAL TEST"
-        
-                docker rm -f mongodb || true
-                docker rm -f test-tracking || true
-                docker network rm $NETWORK || true
-        
-                docker network create $NETWORK
-        
-                docker run -d \
-                  --name mongodb \
-                  --network $NETWORK \
-                  -e MONGO_INITDB_ROOT_USERNAME=admin \
-                  -e MONGO_INITDB_ROOT_PASSWORD=admin123 \
-                  mongo
-        
-                echo "WAITING FOR MONGODB..."
-                sleep 20
-        
-                docker run -d \
-                  --name test-tracking \
-                  --network $NETWORK \
-                  $IMAGE
-        
-                echo "WAITING FOR APPLICATION..."
-                sleep 30
-        
-                echo "===== HEALTH CHECK ====="
-        
-                docker run --rm \
-                  --network $NETWORK \
-                  curlimages/curl \
-                  curl http://test-tracking:8087/tracking || true
-        
-                echo "===== GO TEST ====="
+    steps {
 
-                docker run --rm \
-                  --network $NETWORK \
-                  -v "$WORKSPACE":/app \
-                  -w /app \
-                  golang:1.22 \
-                  go test -run TestTrackingAPI_Success
-            }
-        }
+        sh '''
+        echo "RUN FUNCTIONAL TEST"
+
+        docker rm -f mongodb || true
+        docker rm -f test-tracking || true
+        docker network rm tracking-net || true
+
+        docker network create tracking-net
+
+        docker run -d \
+          --name mongodb \
+          --network tracking-net \
+          -e MONGO_INITDB_ROOT_USERNAME=admin \
+          -e MONGO_INITDB_ROOT_PASSWORD=admin123 \
+          mongo
+
+        echo "WAITING FOR MONGODB..."
+        sleep 20
+
+        docker run -d \
+          --name test-tracking \
+          --network tracking-net \
+          kaulie27/tracking-service:${BUILD_NUMBER}
+
+        echo "WAITING FOR APPLICATION..."
+        sleep 30
+
+        echo "===== HEALTH CHECK ====="
+
+        docker run --rm \
+          --network tracking-net \
+          curlimages/curl \
+          curl http://test-tracking:8087/tracking || true
+
+        echo "===== GO TEST ====="
+
+        docker run --rm \
+          --network tracking-net \
+          -v "$WORKSPACE":/app \
+          -w /app \
+          golang:1.22 \
+          go test -run TestTrackingAPI_Success
+        '''
+    }
+}
         
         // 6. PUSH IMAGE
         stage('Push Image') {
