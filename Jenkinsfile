@@ -33,18 +33,28 @@ pipeline {
         }
         // 5. FUNCTIONAL TEST
         stage('Functional Test') {
-            steps {
+    steps {
+        sh '''
+            echo RUN FUNCTIONAL TEST
 
-                catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
+            # buat network
+            docker network create tracking-net || true
 
-                    sh '''
-                    echo "RUN FUNCTIONAL TEST"
+            # jalankan container app untuk test
+            docker run -d \
+              --name test-tracking \
+              --network tracking-net \
+              -p 8087:8087 \
+              kaulie27/tracking-service:${BUILD_NUMBER}
 
-                    go test -run TestTrackingAPI_Success
-                    '''
-                }
-            }
-        }
+            # tunggu app ready
+            sleep 10
+
+            # jalankan functional test
+            go test -run TestTrackingAPI_Success
+        '''
+    }
+}
         // 6. PUSH IMAGE
         stage('Push Image') {
             steps {
