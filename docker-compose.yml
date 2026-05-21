@@ -20,11 +20,3 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: admin123
     ports:
       - "27017:27017"
-
-  tracking-service:
-    build: .
-    container_name: tracking_service
-    ports:
-      - "8087:8087"
-    depends_on:
-      - mongodb
