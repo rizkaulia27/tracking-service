@@ -1,7 +1,5 @@
 version: '3.8'
-
 services:
-
   postgres:
     image: postgres:16
     container_name: warehouse_postgres
@@ -11,7 +9,6 @@ services:
       POSTGRES_DB: warehouse_db
     ports:
       - "5432:5432"
-
   mongodb:
     image: mongo:7
     container_name: pickup_mongo
@@ -20,3 +17,10 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: admin123
     ports:
       - "27017:27017"
+  tracking-service:
+    build: .
+    container_name: tracking_service
+    ports:
+      - "8087:8087"
+    depends_on:
+      - mongodb
